@@ -1,8 +1,11 @@
 node_modules/
 dist/
+
 .env
 
 auth/
 data/
 
 *.log
+
+.DS_Store
