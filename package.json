@@ -12,12 +12,14 @@
   "dependencies": {
     "@hapi/boom": "^10.0.1",
     "@whiskeysockets/baileys": "^6.7.24",
+    "better-sqlite3": "^13.0.3",
     "dotenv": "^17.4.2",
     "node-cron": "^4.6.0",
     "pino": "^10.4.0",
     "qrcode-terminal": "^0.12.0"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^24.0.0",
     "@types/node-cron": "^3.0.11",
     "@types/qrcode-terminal": "^0.12.2",

@@ -80,7 +80,9 @@ function activeDays(): number[] {
 
   const days = value
     .split(",")
-    .map((day) => Number.parseInt(day.trim(), 10));
+    .map((day) =>
+      Number.parseInt(day.trim(), 10)
+    );
 
   if (days.length === 0) {
     throw new Error(
@@ -89,7 +91,11 @@ function activeDays(): number[] {
   }
 
   for (const day of days) {
-    if (day < 1 || day > 7) {
+    if (
+      Number.isNaN(day) ||
+      day < 1 ||
+      day > 7
+    ) {
       throw new Error(
         "ACTIVE_DAYS must contain numbers from 1 to 7."
       );
@@ -138,6 +144,65 @@ if (selectableCount < 1) {
   );
 }
 
+const reminderMinutesBeforeClose =
+  integer(
+    "REMINDER_MINUTES_BEFORE_CLOSE",
+    5
+  );
+
+function clockMinus(
+  time: string,
+  minutesToSubtract: number
+): string {
+  const [hour, minute] =
+    time.split(":").map(Number);
+
+  const totalMinutes =
+    hour * 60 + minute - minutesToSubtract;
+
+  const normalizedMinutes =
+    ((totalMinutes % 1440) + 1440) % 1440;
+
+  const resultHour = Math.floor(
+    normalizedMinutes / 60
+  );
+
+  const resultMinute =
+    normalizedMinutes % 60;
+
+  return `${String(resultHour).padStart(2, "0")}:${String(
+    resultMinute
+  ).padStart(2, "0")}`;
+}
+
+const closeTime = validateTime("CLOSE_TIME");
+
+const alertTime = clockMinus(
+  closeTime,
+  reminderMinutesBeforeClose
+);
+
+function pollTitle(): string {
+  const title =
+    process.env.POLL_TITLE?.trim() ||
+    "🍱 Today's Lunch";
+
+  const voteBy =
+    `(Please vote before ${alertTime}. Ends at ${closeTime})`;
+
+  if (title.includes("Please vote before")) {
+    return title;
+  }
+
+  return `${title} ${voteBy}`;
+}
+
+if (reminderMinutesBeforeClose < 1) {
+  throw new Error(
+    "REMINDER_MINUTES_BEFORE_CLOSE must be at least 1."
+  );
+}
+
 export const config = {
   whatsapp: {
     groupName: required(
@@ -149,14 +214,18 @@ export const config = {
       "./auth",
   },
 
+  database: {
+    path:
+      process.env.DATABASE_PATH?.trim() ||
+      "./data/lunch.db",
+  },
+
   menu: {
     items: menuItems(),
   },
 
   poll: {
-    title:
-      process.env.POLL_TITLE?.trim() ||
-      "🍱 Today's Lunch",
+    title: pollTitle(),
 
     selectableCount,
   },
@@ -166,11 +235,17 @@ export const config = {
       process.env.TIMEZONE?.trim() ||
       "Asia/Kolkata",
 
-    pollTime: validateTime("POLL_TIME"),
+    pollTime:
+      validateTime("POLL_TIME"),
 
-    closeTime: validateTime("CLOSE_TIME"),
+    closeTime,
 
-    activeDays: activeDays(),
+    alertTime,
+
+    activeDays:
+      activeDays(),
+
+    reminderMinutesBeforeClose,
   },
 
   bot: {
@@ -183,6 +258,15 @@ export const config = {
       "AUTO_CLOSE_ENABLED",
       false
     ),
+
+    reminderEnabled: boolean(
+      "REMINDER_ENABLED",
+      true
+    ),
+
+    contactPerson:
+      process.env.CONTACT_PERSON?.trim() ||
+      "Akash",
   },
 
   logging: {
